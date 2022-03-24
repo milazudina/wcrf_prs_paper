@@ -1,43 +1,7 @@
-setwd("~/Dropbox/prs_24_08_21/")
+setwd("~/Dropbox/PRS_clean_run/4_results/2022march_reanalysis")
 library(readxl)
 library(data.table)
-
-# removing T2D cases from controls
-
-summarise_model <- function(m, outfile = assoc_test_output, row_number) {
-  
-  # Get Model Summary and OR
-  model_summary <- summary(m)
-  model_summary
-  exp(coef(model_summary))
-  
-  # Get Confidence Interval
-  conf_ints <- exp(confint(m))
-  conf_ints
-  
-  # Get P-values
-  p_vals <- coef(model_summary)[,4] # when p values are below <2e-16, you need to get the precise p-value using this
-  p_vals
-  
-  assoc_test_output$OR[row_number] <- exp(coef(model_summary))[2,1]
-  assoc_test_output$lower_CI[row_number] <- conf_ints[2, 1]
-  assoc_test_output$upper_CI[row_number] <- conf_ints[2, 2]
-  assoc_test_output$P_value[row_number] <- coef(model_summary)[2,4]
-  
-  return(assoc_test_output)
-  
-}
-merge_scores_and_pheno <- function(pheno_path, scores_path){
-  
-  pheno <- fread(pheno_path)
-  scores <- read.table(scores_path, header=TRUE, sep="",stringsAsFactors = F)
-  cat("N snps in the score:", scores$CNT[1], "\n")
-  scores$SCORESUM_norm <- scale(scores$SCORESUM) # normalise the scoresum
-  df <- merge(scores, pheno, by.x = "IID", by.y = "IID")
-  df <- df[df$IID > 0, ]
-  
-  return(df)
-}
+source("~/Dropbox/PRS_clean_run/scripts/association_testing_functions.R")
 
 pheno_path <- "/Users/zudina_work/Dropbox/prs_ukbb_replication/phenotype_files/t2d_ukbb_with_PCs.txt"
 snpset_array <- c("brc", "crc", "panc", "prc")
