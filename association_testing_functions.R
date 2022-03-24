@@ -38,9 +38,10 @@ merge_scores_and_pheno <- function(pheno_path, scores_path, pc_ethnicity_path = 
   if (pheno_path != pc_ethnicity_path){
     
     df = merge(df, pc_ethnicity, by.x = "IID", by.y = "IID")
-    df <- df[df$IID > 0 & !is.na(df$GeneticEthnicGrouping), ]
     
   }
+  
+  df = df[df$IID > 0 & !is.na(df$GeneticEthnicGrouping), ]
   
   return(df)
 }

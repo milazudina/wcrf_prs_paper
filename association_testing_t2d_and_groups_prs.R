@@ -13,7 +13,7 @@ for (snpset in snpset_array){
   
   #### Pancreatic Cancer ####
   
-  pheno_path <- "/Users/zudina_work/Dropbox/UKBB_files/Jareds_UKBB_cancer_pheno_files/panc_hosp_icd_ukbb.txt" # phenotype file
+  pheno_path <- "~/Dropbox/UKBB_files/Jareds_UKBB_cancer_pheno_files/panc_hosp_icd_ukbb.txt" # phenotype file
   # Weighted by Betas
   scores_path <- paste("~/Dropbox/PRS_clean_run/3_scores/ukbb_", snpset, "_weighted_score.profile", sep = "") # scores file
   outcome <- "panc"
@@ -323,4 +323,4 @@ for (snpset in snpset_array){
 }
 
 prs_assoc_table <- rbindlist(assoc_test_output_list)
-write.table(prs_assoc_table, "t2d_and_groups_prs_ukbb_2022-03-23.csv", sep = ",")
+write.table(prs_assoc_table, "t2d_and_groups_prs_ukbb_2022-03-23.csv", sep = ",", row.names = F)
