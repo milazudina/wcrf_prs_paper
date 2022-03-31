@@ -252,6 +252,10 @@ for (snpset in snpset_array){
   assoc_test_output <- summarise_model(m6, assoc_test_output, 6)
   print(assoc_test_output[6, ])
   
+  assoc_test_output$OR = exp(assoc_test_output$Beta)
+  assoc_test_output$lower_CI = exp(assoc_test_output$Beta - 1.96*assoc_test_output$StdErr)
+  assoc_test_output$upper_CI = exp(assoc_test_output$Beta + 1.96*assoc_test_output$StdErr)
+  
   assoc_test_output_brc <- assoc_test_output
   
   #### T2D ####
@@ -318,7 +322,6 @@ for (snpset in snpset_array){
   assoc_test_output <- rbind(assoc_test_output_panc, assoc_test_output_crc, assoc_test_output_prc, assoc_test_output_brc, assoc_test_output_t2d)
 
   assoc_test_output_list[[snpset]] <- assoc_test_output
-  View(assoc_test_output_list[[snpset]])
   
 }
 
