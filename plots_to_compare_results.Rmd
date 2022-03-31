@@ -1,0 +1,381 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r prepare files, include=FALSE}
+
+library(ggplot2)
+library(data.table)
+library(dplyr)
+
+df_ukbb_cancer_prs = fread("~/Dropbox/PRS_clean_run/4_results/2022march_reanalysis/cancer_prs_ukbb_2022-03-23.csv")
+df_ukbb_t2d_groups_prs = read.csv("~/Dropbox/PRS_clean_run/4_results/2022march_reanalysis/t2d_and_groups_prs_ukbb_2022-03-23.csv")
+
+all(colnames(df_ukbb_cancer_prs) == colnames(df_ukbb_t2d_groups_prs))
+df_ukbb = rbind(df_ukbb_cancer_prs, df_ukbb_t2d_groups_prs) %>% mutate(across(c(Weighting, Outcome, SNPs, Adjustment), factor))
+
+df_ukbb %>% select(where(is.factor)) %>% apply(., 2, function(x){levels(as.factor(x))})
+
+```
+
+In this document, two parameters are compared:
+
+1. Limiting the subset of people to Genetic Ethnic Background - European or All European (UKBB)
+2. Adjustment by 6 PCs and 6 PCs + Age
+
+### Limiting the subset of people to Genetic Ethnic Background - European or All European (UKBB)
+
+### Adjustment by 6 PCs vs 6 PCs + Age vs Unadjusted
+
+1. T2D PRS
+
+```{r prs-t2d, echo=FALSE, fig.show="hold", out.width="50%"}
+
+# Weighted - by adjustment
+scores_for_plots_t2d <- df_ukbb %>%
+  filter(SNPs == "t2d", Weighting == "Weighted", Outcome != "T2D.all") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value)
+
+ggplot(scores_for_plots_t2d, aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted T2D PRS")
+
+# Unweighted - by adjustment
+
+scores_for_plots_t2d <- df_ukbb %>%
+  filter(SNPs == "t2d", Weighting == "Unweighted", Outcome != "T2D.all") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value)
+
+ggplot(scores_for_plots_t2d, aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted T2D PRS")
+
+```
+
+2. Pathway-specific PRS
+
+```{r pathways-1, echo=FALSE, fig.show="hold", out.width="50%"}
+
+df_ukbb %>%
+  filter(SNPs == "group1_464", Weighting == "Weighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Group 1a PRS")
+
+df_ukbb %>%
+  filter(SNPs == "group1_464", Weighting == "Unweighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Group 1a PRS")
+
+```
+
+``` {r pathways-2, echo=FALSE, fig.show="hold", out.width="50%"}
+
+df_ukbb %>%
+  filter(SNPs == "group5_36", Weighting == "Weighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Group 1b PRS")
+
+df_ukbb %>%
+  filter(SNPs == "group5_36", Weighting == "Unweighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Group 1b PRS")
+
+```
+
+``` {r pathways-3, echo=FALSE, fig.show="hold", out.width="50%"}
+
+df_ukbb %>%
+  filter(SNPs == "group4_78", Weighting == "Weighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Group 2 PRS")
+
+df_ukbb %>%
+  filter(SNPs == "group4_78", Weighting == "Unweighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Group 2 PRS")
+
+```
+
+``` {r pathways-4, echo=FALSE, fig.show="hold", out.width="50%"}
+
+group = "group2_409"
+
+df_ukbb %>%
+  filter(SNPs == group, Weighting == "Weighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Group 3 PRS")
+
+df_ukbb %>%
+  filter(SNPs == group, Weighting == "Unweighted") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Group 3 PRS")
+
+```
+
+``` {r pathways-5, echo=FALSE, fig.show="hold", out.width="50%"}
+
+group = "group3_96"
+
+df_ukbb %>%
+  filter(SNPs == group, Weighting == "Weighted", Outcome != "T2D.all") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Group 4 PRS")
+
+df_ukbb %>%
+  filter(SNPs == group, Weighting == "Unweighted", Outcome != "T2D.all") %>%
+  select(Adjustment, Outcome, OR, lower_CI, upper_CI, P_value) %>%
+  ggplot(., aes(x = Outcome, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+    theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+          axis.text.x.bottom = element_text(size = 12.5),
+          axis.title.y = element_text(size = 12.5),
+          axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Group 4 PRS")
+
+```
+
+3. Cancer PRS
+
+``` {r cancer-prs, echo=FALSE, fig.show="hold", out.width="50%"}
+
+df_ukbb %>% 
+  filter(Weighting == "Weighted", Outcome == "T2D.all", !grepl("group", SNPs), SNPs != "t2d") %>% 
+  ggplot(., aes(x = SNPs, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+  theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+        axis.text.x.bottom = element_text(size = 12.5),
+        axis.title.y = element_text(size = 12.5),
+        axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Cancer PRSs - T2D outcome")
+
+df_ukbb %>% 
+  filter(Weighting == "Unweighted", Outcome == "T2D.all", !grepl("group", SNPs), SNPs != "t2d") %>% 
+  ggplot(., aes(x = SNPs, y = OR, ymin = lower_CI, ymax = upper_CI, color = Adjustment))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Adjustment), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+  theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+        axis.text.x.bottom = element_text(size = 12.5),
+        axis.title.y = element_text(size = 12.5),
+        axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Cancer PRS - T2D outcome")
+
+
+```
