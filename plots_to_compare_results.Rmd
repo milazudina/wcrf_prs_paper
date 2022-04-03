@@ -27,12 +27,21 @@ df_ukbb = rbind(df_ukbb_cancer_prs, df_ukbb_t2d_groups_prs) %>% mutate(across(c(
 df_ukbb %>% select(where(is.factor)) %>% apply(., 2, function(x){levels(as.factor(x))})
 
 df_ukbb_old = read_excel("~/Dropbox/PRS_clean_run/_deprecated_prs_24_08_21/ukbb_prs_24_08_21.xlsx", sheet = 2)
+df_ukbb_old_cancers = read_excel("~/Dropbox/PRS_clean_run/_deprecated_prs_24_08_21/ukbb_prs_24_08_21.xlsx", sheet = 3)
+
 colnames(df_ukbb_old)
+colnames(df_ukbb_old_cancers)
 colnames(df_ukbb)
 
 df_ukbb_old = df_ukbb_old %>% 
   filter(Sensitivity == "Main") %>% 
   select(colnames(df_ukbb_old)[colnames(df_ukbb_old) %in% colnames(df_ukbb)])
+
+df_ukbb_old_cancers = df_ukbb_old_cancers %>% 
+  select(colnames(df_ukbb_old_cancers)[colnames(df_ukbb_old_cancers) %in% colnames(df_ukbb)])
+
+df_ukbb_old = rbind(df_ukbb_old, df_ukbb_old_cancers)
+
 df_ukbb_old$Cohort = "UKBB EUR Self-Reported"
 df_ukbb$Cohort = "UKBB EUR Genetic"
 df_ukbb = df_ukbb %>% select(-colnames(df_ukbb)[colnames(df_ukbb) %nin% colnames(df_ukbb_old)])
@@ -439,6 +448,61 @@ if (show_unweighted){
   labs(title = paste("Unweighted", group, "PRS"))
   
 }
+
+```
+
+Cancer PRS: All associations except pancreatic cancer PRS lose significance
+
+``` {r cancer-prs-ethnicity, echo=FALSE, fig.show="hold", out.width="50%"}
+
+df %>% 
+  filter(Weighting == "Weighted", Outcome == "T2D", grepl("cancer", SNPs), Adjustment == "6 PCs") %>% 
+  ggplot(., aes(x = SNPs, y = OR, ymin = lower_CI, ymax = upper_CI, color = Cohort))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Cohort), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+  theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+        axis.text.x.bottom = element_text(size = 12.5),
+        axis.title.y = element_text(size = 12.5),
+        axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Weighted Cancer PRSs - T2D outcome",
+       x = "PRS")
+
+if (show_unweighted){
+  
+  df %>% 
+  filter(Weighting == "Unweighted", Outcome == "T2D", grepl("cancer", SNPs), Adjustment == "6 PCs") %>% 
+  ggplot(., aes(x = SNPs, y = OR, ymin = lower_CI, ymax = upper_CI, color = Cohort))+
+  geom_point(position = position_dodge(0.7),
+             cex = 2)+
+  geom_errorbar(lwd = 1.25,
+                width = 0.3,
+                position = position_dodge(0.7))+
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey")+
+  geom_text(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 1), ""), group = Cohort), 
+            hjust=-0.3, vjust=0.3, colour = 'black', size = 3, position = position_dodge(width = 0.7))+
+  #geom_text_repel(aes(label = ifelse(P_value <= 5e-2, formatC(P_value, format = "e", digits = 2), ""), group = Weighting),
+  #                size = 3, box.padding = 0.5, min.segment.length = 0.8, segment.alpha = 0, colour = "black", position = position_dodge(width = 0.7)) +
+  scale_color_manual(values = c("#FFC53A", "#DC602E", "#05A8AA"))+
+  theme_minimal()+
+  theme(axis.title.x = element_text(vjust=-0.5, size = 12.5),
+        axis.text.x.bottom = element_text(size = 12.5),
+        axis.title.y = element_text(size = 12.5),
+        axis.text.y.left = element_text(size = 12.5))+
+  labs(title = "Unweighted Cancer PRSs - T2D outcome",
+       x = "PRS")
+  
+}
+
 
 ```
 
