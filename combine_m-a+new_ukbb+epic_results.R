@@ -68,5 +68,51 @@ ma = ma %>% rename(SNPs = V1,
 
 # make "wide"
 ma_epic_ukbb = full_join(ma, df_epic_harmonised) %>% full_join(., df_ukbb_harmonised)
-write.table(ma_epic_ukbb, "all_prs_m-a+new_ukbb+epic_22-04-03.csv ", row.names = F, quote = T, sep = ",")
-  
+write.table(ma_epic_ukbb, "all_prs_m-a+new_ukbb+epic_22-04-03.csv", row.names = F, quote = T, sep = ",")
+
+#### Pivot it to the long format #####
+
+setwd("~/Dropbox/PRS_clean_run/PRS_meta-anlysis/2022march/")
+
+scores_for_plots$Outcome <- as.factor(scores_for_plots$Outcome)
+scores_for_plots$SNPs <- as.factor(scores_for_plots$SNPs)
+colnames(scores_for_plots)[colnames(scores_for_plots)=="SNPs"] = "PRS"
+scores_for_plots$fixed_ukbb_weight = with(scores_for_plots, fixed_UKBB_weight/(fixed_UKBB_weight+fixed_EPIC_weight))
+scores_for_plots$fixed_epic_weight = with(scores_for_plots, fixed_EPIC_weight/(fixed_UKBB_weight+fixed_EPIC_weight))
+scores_for_plots$fixed_fixed_weight = 1
+scores_for_plots[, c("fixed_UKBB_weight", "fixed_EPIC_weight")] = list(NULL)
+
+# really a ridiculous way to do it... but I couldn't come up with anything else in a short time
+
+scores_for_plots_long = scores_for_plots %>% 
+  pivot_longer(cols = contains("P_value"),
+               values_to = "P_value",
+               names_to = c("Study_1", "dummy1", "dummy2"),
+               names_sep = "_") %>%
+  select(-contains("dummy")) %>%
+  pivot_longer(cols = contains("lower_CI"),
+               values_to = "lower_CI",
+               names_to = c("Study_2", "dummy1", "dummy2"),
+               names_sep = "_") %>%
+  select(-contains("dummy")) %>%
+  pivot_longer(cols = contains("upper_CI"),
+               values_to = "upper_CI",
+               names_to = c("Study_3", "dummy1", "dummy2"),
+               names_sep = "_") %>%
+  select(-contains("dummy")) %>%
+  pivot_longer(cols = contains("OR"),
+               values_to = "OR",
+               names_to = c("Study_4", "dummy1", "dummy2"),
+               names_sep = "_") %>%
+  select(-contains("dummy")) %>%
+  pivot_longer(cols = contains("weight"),
+               values_to = "weight",
+               names_to = c("dummy1", "Study_5", "dummy2"),
+               names_sep = "_") %>%
+  select(-contains("dummy"))
+
+scores_for_plots_long = scores_for_plots_long[apply(scores_for_plots_long[, grepl("Study", colnames(scores_for_plots_long))], 1, function(x) length(unique(x)) == 1), ] %>%
+  rename(Study = Study_5) %>%
+  select(!contains("Study_"))
+
+write.table(scores_for_plots_long, "long_prs_m-a+new_ukbb+epic_22-04-03.csv", row.names = F, quote = T, sep = ",")
